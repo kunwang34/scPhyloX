@@ -1,0 +1,10 @@
+#!/bin/bash
+#SBATCH -J HSC_est
+#SBATCH -p all
+#SBATCH -N 1
+#SBATCH -n 5
+#SBATCH --mem=1G
+#SBATCH -t 0
+#SBATCH -o oe/%x-%jfiltering_output_SX001.log 
+#SBATCH -e oe/%x-%jfiltering_output_SX001.err
+python hsc_est.py -f ../datasets/HSC_lifespan/filtering_output_SX001/tree_SX001_5_01_standard_rho01.tree -t 48
