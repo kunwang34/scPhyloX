@@ -87,4 +87,4 @@ with pm.Model() as model:
     pm.Potential("likelihood", logl(theta))
     idata = pm.sample(1000, tune=1000, step=pm.DEMetropolis(), chains=7)
 
-pickle.dump(idata, open(f"/home/wangkun/phylodynamics_new/results/hsc/{file.split('/')[-1].split('_')[1]}.pkl", 'wb'))
+pickle.dump(idata, open(f"../results/hsc/{file.split('/')[-1].split('_')[1]}.pkl", 'wb'))

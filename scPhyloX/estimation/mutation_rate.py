@@ -113,13 +113,13 @@ def my_loglike(theta, data):
     mu, beta = theta
     return BranchLength(mu, beta).likelihood(data)
 
-def mutation_rate_mcmc(data, draw=1000, tune=1000, chain=4, mu0=1, sigma=0.2):
+def mutation_rate_mcmc(data, draw=1000, tune=1000, chain=4, mu0=2, sigma=0.2):
     logl = LogLike(my_loglike, data)
     # muh, betah = para_prior
     with pm.Model() as model:
         mu = pm.TruncatedNormal('mu', mu=mu0, sigma=sigma, lower=0, upper=10)
-        beta = pm.Beta('beta', alpha=1, beta=1)
-        theta = pt.as_tensor_variable([mu, beta])
+        delta = pm.Beta('delta', alpha=1, beta=1)
+        theta = pt.as_tensor_variable([mu, delta])
         pm.Potential("likelihood", logl(theta))
         idata = pm.sample(draw, tune=tune, step=pm.DEMetropolis(), chains=4)
     return idata

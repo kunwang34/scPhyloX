@@ -10,6 +10,19 @@ from scipy.integrate import quad
 from sko.DE import DE
 import warnings
 
+def bt(t, a, b, k, t0):
+    # a+b -> b
+    return a/(1+np.exp(k*(t-t0))) + b
+
+
+def cellnumber(t, xx, a, b, k, t0, p, r, d):
+    x, y = xx
+    bt = lambda t: a/(1+np.exp(k*(t-t0))) + b
+    return np.array([
+        ((1+p)*bt(t)-p)*r*x,
+        (1-bt(t))*(1+p)*r*x -d*y
+    ])
+    
 def ncyc(i, t, c0, ax, bx, r, d, k, t0):
     if i == 0 :
         t1 = c0*np.exp(-r*t)

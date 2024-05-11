@@ -49,21 +49,21 @@ class System:
         self.max_t = max_t
         self.mut_rate = mut_rate
         self.global_id = defaultdict(int)
-        self.Stemcells = [Cell(init=True, celltype='c', lseq=nbase, cellid=_) for _ in range(int(self.n[0][0]))]
-        self.Diffcells = [Cell(init=True, celltype='n', lseq=nbase, cellid=_) for _ in range(int(self.n[0][1]))]
+        self.Neutral = [Cell(init=True, celltype='c', lseq=nbase, cellid=_) for _ in range(int(self.n[0][0]))]
+        self.Advantageous = [Cell(init=True, celltype='n', lseq=nbase, cellid=_) for _ in range(int(self.n[0][1]))]
         self.global_id[0] += np.sum(self.n[0])
         self.mut_num = 0
         self.cell_num = sum(self.n[0])   
         self.mut_time = []
         
-        self.mut_num_SC = [0]*int(self.n[0][0])
-        self.mut_num_DC = [0]*int(self.n[0][1])
+        self.mut_num_NC = [0]*int(self.n[0][0])
+        self.mut_num_AC = [0]*int(self.n[0][1])
         self.log_cells = dict()
         self.lineage_info = dict()
-        for cell in self.Stemcells:
+        for cell in self.Neutral:
             self.lineage_info[f'<{cell.gen}_{cell.cellid}>'] = 0
             self.log_cells[f'<{cell.gen}_{cell.cellid}>'] = cell
-        for cell in self.Diffcells:
+        for cell in self.Advantageous:
             self.lineage_info[f'<{cell.gen}_{cell.cellid}>'] = 0
             self.log_cells[f'<{cell.gen}_{cell.cellid}>'] = cell
             
@@ -79,11 +79,11 @@ class System:
         cell.seq[np.random.choice(range(cell.lseq), mut_num)] = 1
         return cell
     
-    def stemrenewal(self):
-        ind = np.random.choice(range(len(self.Stemcells)))
-        des1 = deepcopy(self.Stemcells[ind])
-        des2 = deepcopy(self.Stemcells[ind])
-        self.log_cells[f'<{self.Stemcells[ind].gen}_{self.Stemcells[ind].cellid}>'].is_alive=False
+    def ncrenewal(self):
+        ind = np.random.choice(range(len(self.Neutral)))
+        des1 = deepcopy(self.Neutral[ind])
+        des2 = deepcopy(self.Neutral[ind])
+        self.log_cells[f'<{self.Neutral[ind].gen}_{self.Neutral[ind].cellid}>'].is_alive=False
         des1 = self.mutate(des1, self.mut_rate)
         des2 = self.mutate(des2, self.mut_rate)
         des1.gen += 1
@@ -91,26 +91,26 @@ class System:
         des1.cellid = self.global_id[des1.gen]
         des2.cellid = self.global_id[des2.gen] + 1
         self.global_id[des1.gen] += 2
-        self.lineage_info[f'<{des1.gen}_{des1.cellid}>'] = self.Stemcells[ind].cellid
-        self.lineage_info[f'<{des2.gen}_{des2.cellid}>'] = self.Stemcells[ind].cellid
+        self.lineage_info[f'<{des1.gen}_{des1.cellid}>'] = self.Neutral[ind].cellid
+        self.lineage_info[f'<{des2.gen}_{des2.cellid}>'] = self.Neutral[ind].cellid
         self.log_cells[f'<{des1.gen}_{des1.cellid}>'] = des1
         self.log_cells[f'<{des2.gen}_{des2.cellid}>'] = des2
-        self.mut_num -= self.mut_num_SC[ind]
-        del self.Stemcells[ind]
-        del self.mut_num_SC[ind]
+        self.mut_num -= self.mut_num_NC[ind]
+        del self.Neutral[ind]
+        del self.mut_num_NC[ind]
         
-        self.Stemcells.append(des1)
-        self.Stemcells.append(des2)
-        self.mut_num_SC.append(sum(self.Stemcells[-1].seq))
-        self.mut_num_SC.append(sum(self.Stemcells[-2].seq))
-        self.mut_num += sum(self.mut_num_SC[-2:])
+        self.Neutral.append(des1)
+        self.Neutral.append(des2)
+        self.mut_num_NC.append(sum(self.Neutral[-1].seq))
+        self.mut_num_NC.append(sum(self.Neutral[-2].seq))
+        self.mut_num += sum(self.mut_num_NC[-2:])
         self.cell_num += 1
     
-    def diffrenewal(self):
-        ind = np.random.choice(range(len(self.Diffcells)))
-        des1 = deepcopy(self.Diffcells[ind])
-        des2 = deepcopy(self.Diffcells[ind])
-        self.log_cells[f'<{self.Diffcells[ind].gen}_{self.Diffcells[ind].cellid}>'].is_alive=False
+    def acrenewal(self):
+        ind = np.random.choice(range(len(self.Advantageous)))
+        des1 = deepcopy(self.Advantageous[ind])
+        des2 = deepcopy(self.Advantageous[ind])
+        self.log_cells[f'<{self.Advantageous[ind].gen}_{self.Advantageous[ind].cellid}>'].is_alive=False
         des1 = self.mutate(des1, self.mut_rate)
         des2 = self.mutate(des2, self.mut_rate)
         des1.gen += 1
@@ -118,56 +118,56 @@ class System:
         des1.cellid = self.global_id[des1.gen]
         des2.cellid = self.global_id[des2.gen] + 1
         self.global_id[des1.gen] += 2
-        self.lineage_info[f'<{des1.gen}_{des1.cellid}>'] = self.Diffcells[ind].cellid
-        self.lineage_info[f'<{des2.gen}_{des2.cellid}>'] = self.Diffcells[ind].cellid
+        self.lineage_info[f'<{des1.gen}_{des1.cellid}>'] = self.Advantageous[ind].cellid
+        self.lineage_info[f'<{des2.gen}_{des2.cellid}>'] = self.Advantageous[ind].cellid
         self.log_cells[f'<{des1.gen}_{des1.cellid}>'] = des1
         self.log_cells[f'<{des2.gen}_{des2.cellid}>'] = des2
-        self.mut_num -= self.mut_num_DC[ind]
-        del self.Diffcells[ind]
-        del self.mut_num_DC[ind]
+        self.mut_num -= self.mut_num_AC[ind]
+        del self.Advantageous[ind]
+        del self.mut_num_AC[ind]
         
-        self.Diffcells.append(des1)
-        self.Diffcells.append(des2)
-        self.mut_num_DC.append(sum(self.Diffcells[-1].seq))
-        self.mut_num_DC.append(sum(self.Diffcells[-2].seq))
-        self.mut_num += sum(self.mut_num_DC[-2:])
+        self.Advantageous.append(des1)
+        self.Advantageous.append(des2)
+        self.mut_num_AC.append(sum(self.Advantageous[-1].seq))
+        self.mut_num_AC.append(sum(self.Advantageous[-2].seq))
+        self.mut_num += sum(self.mut_num_AC[-2:])
         self.cell_num += 1
         
-    def stemdiff(self):
-        ind = np.random.choice(range(len(self.Stemcells)))
-        des1 = deepcopy(self.Stemcells[ind])
-        self.log_cells[f'<{self.Stemcells[ind].gen}_{self.Stemcells[ind].cellid}>'].is_alive=False
-        self.mut_num -= self.mut_num_SC[ind]
+    def advmut(self):
+        ind = np.random.choice(range(len(self.Neutral)))
+        des1 = deepcopy(self.Neutral[ind])
+        self.log_cells[f'<{self.Neutral[ind].gen}_{self.Neutral[ind].cellid}>'].is_alive=False
+        self.mut_num -= self.mut_num_NC[ind]
         des1.celltype = 'n'
         des1.gen += 1
         des1.cellid = self.global_id[des1.gen]
-        self.lineage_info[f'<{des1.gen}_{des1.cellid}>'] = self.Stemcells[ind].cellid
+        self.lineage_info[f'<{des1.gen}_{des1.cellid}>'] = self.Neutral[ind].cellid
         self.log_cells[f'<{des1.gen}_{des1.cellid}>'] = des1
         self.global_id[des1.gen] += 1
-        del self.Stemcells[ind]
-        del self.mut_num_SC[ind]
-        self.Diffcells.append(self.mutate(des1, self.mut_rate))
-        self.mut_num_DC.append(sum(self.Diffcells[-1].seq))
-        self.mut_num += self.mut_num_DC[-1]
+        del self.Neutral[ind]
+        del self.mut_num_NC[ind]
+        self.Advantageous.append(self.mutate(des1, self.mut_rate))
+        self.mut_num_AC.append(sum(self.Advantageous[-1].seq))
+        self.mut_num += self.mut_num_AC[-1]
         self.cell_num += 1
     
-    def stemdeath(self):
-        ind = np.random.choice(range(len(self.Stemcells)))
-        self.mut_num -= self.mut_num_SC[ind]
+    def ncdeath(self):
+        ind = np.random.choice(range(len(self.Neutral)))
+        self.mut_num -= self.mut_num_NC[ind]
         self.cell_num -= 1
-        self.mut_num -= sum(self.Stemcells[ind].seq)
-        self.log_cells[f'<{self.Stemcells[ind].gen}_{self.Stemcells[ind].cellid}>'].is_alive=False
-        del self.Stemcells[ind]   
-        del self.mut_num_SC[ind]
+        self.mut_num -= sum(self.Neutral[ind].seq)
+        self.log_cells[f'<{self.Neutral[ind].gen}_{self.Neutral[ind].cellid}>'].is_alive=False
+        del self.Neutral[ind]   
+        del self.mut_num_NC[ind]
         
-    def diffdeath(self):
-        ind = np.random.choice(range(len(self.Diffcells)))
-        self.mut_num -= self.mut_num_DC[ind]
+    def acdeath(self):
+        ind = np.random.choice(range(len(self.Advantageous)))
+        self.mut_num -= self.mut_num_AC[ind]
         self.cell_num -= 1
-        self.mut_num -= sum(self.Diffcells[ind].seq)
-        self.log_cells[f'<{self.Diffcells[ind].gen}_{self.Diffcells[ind].cellid}>'].is_alive=False
-        del self.Diffcells[ind]   
-        del self.mut_num_DC[ind]
+        self.mut_num -= sum(self.Advantageous[ind].seq)
+        self.log_cells[f'<{self.Advantageous[ind].gen}_{self.Advantageous[ind].cellid}>'].is_alive=False
+        del self.Advantageous[ind]   
+        del self.mut_num_AC[ind]
         
 
     def evolute(self, steps): 
@@ -183,7 +183,7 @@ class System:
             self.t.append(self.t[-1] + t0)
             d = np.random.choice(self.reactions, p=A)
             self.n.append(self.n[-1] + d.num_diff)
-            switch = {1:self.stemrenewal,2:self.diffrenewal,3:self.stemdiff, 4:self.stemdeath, 5:self.diffdeath}
+            switch = {1:self.ncrenewal,2:self.acrenewal,3:self.advmut, 4:self.ncdeath, 5:self.acdeath}
             switch.get(d.index)()
             self.log.append(d.index) 
             self.mut_time.append(self.mut_num/self.cell_num)
@@ -207,4 +207,4 @@ def simulation(x0, max_t, mut_rate, r, a, s, u):
     system.add_reaction(death_n, [1, 0], [0, 0], 4)
     system.add_reaction(death_a, [0, 1], [0, 0], 5)
     system.evolute(200000000)
-    return system
+    return system 

@@ -1,6 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 from Bio import Phylo
+import gzip
 
 population_size = {'Br':75000,'Ey':44000,'Fb':281600,'L1':10000,'L2':13500,'L3':17000,'Mp':19470,'Sg':102400,'Wg':49000}
 # population_size = {'Br':75000,'Ey':44000,'Fb':2200,'L1':10000,'L2':13500,'L3':17000,'Mp':19470,'Sg':200,'Wg':49000}
@@ -12,7 +13,6 @@ tumor_data = {'4_T':(20,55,91), '5_T':(14,32,91), '16_T':(18,34,81), '19_T3':(18
 tumor_size = dict()
 for i in tumor_data:
     tumor_size[i] = cell_number_calc(*tumor_data[i])
-
 
 def get_branchlen(seqtab:np.ndarray=None, sys=None):
     if seqtab is None:
@@ -61,8 +61,13 @@ def mutnum_fly(seqs, ref):
     with open(ref, 'r') as f:
         ref0 = f.readlines()[-1]
     ref = [i for i in ref0 if i in 'CG']
-    with open(seqs, 'r') as f:
-        seq = f.readlines()
+    if 'gz' in seqs:
+        with gzip.open(seqs, 'r') as f:
+            seq = f.readlines()
+            seq = [i.decode() for i in seq]
+    else:
+        with open(seqs, 'r') as f:
+            seq = f.readlines()
     mutmat = []
     for i in seq:
         mutarr = []
@@ -77,8 +82,13 @@ def branchlen_fly(seqs, ref, rs=1):
     with open(ref, 'r') as f:
         ref0 = f.readlines()[-1]
     ref = [i for i in ref0 if i in 'CG']
-    with open(seqs, 'r') as f:
-        seq = f.readlines()
+    if 'gz' in seqs:
+        with gzip.open(seqs, 'r') as f:
+            seq = f.readlines()
+            seq = [i.decode() for i in seq]
+    else:
+        with open(seqs, 'r') as f:
+            seq = f.readlines()
     mutmat = []
     for i in seq:
         mutarr = []
