@@ -1,3 +1,4 @@
 nbsphinx
 sphinx-autoapi
 recommonmark
+sphinx-rtd-theme
