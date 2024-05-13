@@ -19,6 +19,10 @@ def corr_plot(x, y, ax, stats='pearson', r0_x=None, r0_y=None, r1_x=None, r1_y=N
             pearson or spearman
         r0_x, r0_y, r1_x, r1_y: 
             locations to label the correlation coefficient and the p-value
+        line:
+            fit or diag, fit for linear regression
+        alternative:
+            greater, less or two-sided
         fontsize:
             fontsize
     Return:
@@ -68,6 +72,16 @@ def corr_plot(x, y, ax, stats='pearson', r0_x=None, r0_y=None, r1_x=None, r1_y=N
 
 
 def colless_index(tree):
+    '''
+    calculate Colless' index
+    
+    Args:
+        tree:
+            Phylogenetic tree
+    Return:
+        float:
+            Colless' index
+    '''
     nodes = tree.get_nonterminals()
     ci = []
     binary = 1
@@ -80,22 +94,55 @@ def colless_index(tree):
     return ci
 
 def colless_index_corrected(tree):
+    '''
+    calculate corrected Colless' index
+    
+    Args:
+        tree:
+            Phylogenetic tree
+    Return:
+        float:
+            corrected Colless' index
+    '''
     ci = np.sum(colless_index(tree))
     n = len(tree.get_terminals())
     return 2*ci/(n-1)/(n-2)
     
     
 def ext_gen(cell):
+    '''
+    Extract generation with given cell name
+    '''
     if cell == '0':
         return -1
     return int(cell.split('_')[0][1:])
 
 def ext_cid(cell):
+    '''
+    Extract cell id with given cell name
+    '''
     if cell == '0':
         return 0
     return int(cell.split('_')[1][:-1])
 
 def reconstruct(lineage_info, sel_cells, file_name):
+    """
+    Reconstruct phylogenetic tree of simulation data
+    
+    Args:
+        file:
+            Simulation file path
+        output:
+            Output newick file path
+        seed:
+            Random seed
+        is_balance:
+            Is all cell types' cell number equal
+        ratio:
+            How many cells to reconstruct
+    Return:
+        newick tree at output file
+    """
     new_keep = deepcopy(sel_cells)
     sample_index = deepcopy(sel_cells)
     while new_keep:

@@ -15,8 +15,10 @@ def bt(t: float, a:float, b:float, k:float, t0:float):
     Stem cell growth rate \beta(t)
     
     Args:
-        t: time
-        a,b,k,t0: parameters
+        t: 
+            time
+        a,b,k,t0: 
+            parameters
     '''
     # a+b -> b
     return a/(1+np.exp(k*(t-t0))) + b
@@ -27,8 +29,10 @@ def cellnumber(t, xx, a, b, k, t0, p, r, d):
     ODE of cell number changes over time
     
     Args:
-        t: time
-        xx: [n_stemcell, n_nonstemcell]
+        t: 
+            time
+        xx: 
+            [n_stemcell, n_nonstemcell]
     '''
     x, y = xx
     bt = lambda t: a/(1+np.exp(k*(t-t0))) + b
@@ -39,7 +43,20 @@ def cellnumber(t, xx, a, b, k, t0, p, r, d):
     
 def ncyc(i, t, c0, ax, bx, r, d, k, t0):
     '''
-    Stem cell 
+    Stem cell number calculator
+    
+    Args:
+        i:
+            generation
+        t:
+            time
+        c0:
+            initial cell number
+        ax,bx,r,d,k,t0:
+            parameters
+    return:
+        float:
+            Stem cell number in generation i at time t.
     '''
     if i == 0 :
         t1 = c0*np.exp(-r*t)
@@ -51,15 +68,60 @@ def ncyc(i, t, c0, ax, bx, r, d, k, t0):
     return t1*t2
 
 def nnc(i, t, c0, ax, bx, r, d, k, t0):
+    '''
+    non-stem cell number calculator
+    
+    Args:
+        i:
+            generation
+        t:
+            time
+        c0:
+            initial cell number
+        ax,bx,r,d,k,t0:
+            parameters
+    Return:
+        float:
+            non-stem cell number in generation i at time t.
+    '''
     func = lambda t1: np.exp(d*t1)*(2-ax/(1+np.exp(k*(t1-t0)))-bx)*ncyc(i, t1, c0, ax, bx, r, d, k, t0)
     res = np.exp(-d*t)*r*quad(func, 0, t)[0]
     return res
 
 def p_xi(n_gen, T, c0, ax, bx, r, d, k, t0):
+    '''
+    Probability density function of LR distance
+    Args:
+        n_gen:
+            generation
+        T: 
+            time
+        c0:
+            initial cell number
+        ax, bx, r, d, k, t0: 
+            parameters
+    Return:
+        np.array:
+            Probability density of LR distance at time T.
+    '''
     xt = np.array([ncyc(i, T, c0, ax, bx, r, d, k, t0) for i in range(n_gen)])+ np.array([nnc(i, T, c0, ax, bx, r, d, k, t0) for i in range(n_gen)])
     return xt
 
 def my_loglike(theta, data, args):
+    '''
+    Likelihood of lr-dist
+
+    Args:
+        theta:
+            parameters, (ax, bx, r, d, k ,t0)
+        data:
+            Observed lr dist
+        args:
+            paramteres, (time, initial_cell_number, prior_sigma)
+    Return:
+        float:
+            Sum of log-likelihood of given lr dist parameters
+    '''
     T, c0, sigma = args
     ax, bx, r, d, k, t0 = theta
     xt = p_xi(len(data), T, c0, ax, bx, r, d, k, t0)
@@ -67,6 +129,20 @@ def my_loglike(theta, data, args):
     return llh
 
 def para_inference_DE(data, T=20, c0=None, sigma=1, n_iter=100, bootstrape=0, verbose='text'):
+    '''
+    Mutation rate estimation using DE
+    
+    Args:
+        data:
+            lp-dist
+        n_iter:
+            Iterations of de estimation
+        bootstrape:
+            Weather using bootstrape to accuratly estimate mutation rate, 0 to turn off.
+    Return:
+        tuple:
+            (accepted parameters, loss, de-estimator)
+    '''
     if c0 is None:
         def loss(theta):
             ax, bx, r, d, k, t0, c0 = theta
@@ -127,6 +203,27 @@ class LogLike(pt.Op):
         outputs[0][0] = np.array(logl)  # output the log-likelihood
         
 def mcmc_inference(data, para_prior, T, c0, sigma, draw=1000, tune=1000, chains=8):
+    '''
+    Mutation rate estimation using DE-MCMC
+    
+    Args:
+        data:
+            Observed lp-dist
+        data_prior:
+            mean of prior distributions of all parameters
+        T:
+            time of phylodynamics eqns
+        c0:
+            initial cell numbers
+        sigma:
+            variation of loss function
+        draw:
+            Number of smaples to draw
+        tune:
+            Number of iterations to tune
+        chain:
+            number of chains to sample
+    '''
     logl = LogLike(my_loglike, data, (T, c0, sigma))
     axh, bxh, rh, dh, kh, t0h = para_prior
     with pm.Model() as model:

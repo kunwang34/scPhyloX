@@ -7,6 +7,19 @@ from collections import defaultdict
 import pandas as pd
 
 class Reaction: 
+    '''
+    Cell division/differentiation type
+    
+    Args:
+        rate:
+            reaction rate function
+        num_lefts:
+            Cell numbers before reaction
+        num_right:
+            Cell numbers after reaction
+        index:
+            Reaction index
+    '''
     def __init__(self, rate=0., num_lefts=None, num_rights=None, index=None):
         self.rate = rate
         assert len(num_lefts) == len(num_rights)
@@ -20,6 +33,25 @@ class Reaction:
         return self.rate(t) * self.combine(n, self.num_lefts)
 
 class Cell:
+    """
+    Cell class
+    
+    Args:
+        seq:
+            DNA sequence
+        gen: 
+            Cell generation
+        cellid: 
+            Cell id
+        celltype:
+            Cell type, neutral/advantageous cell
+        is_alive: 
+            Is cell alive or died
+        lseq: 
+            Length of DNA seq 
+        init: 
+            if init, cell will generate DNA seq with given length lseq automatically
+    """ 
     def __init__(self, seq=None, gen=None, cellid=None, celltype=None, is_alive=True, lseq=10000, init=False):
         self.seq = seq
         self.gen = gen
@@ -36,6 +68,23 @@ class Cell:
             self.gen = 0
             
 class System: 
+    '''
+    Gillespie simulation
+    
+    Args:
+        num_elements: 
+            Cell type number
+        inits: 
+            Initial cell number
+        nbase:
+            length of cell DNA seq
+        mut_rate:
+            mutation rate of DNA seq, follows Poisson distribution
+        max_t:
+            maximum simulation time
+        start_t:
+            Mutate start time
+    '''
     def __init__(self, num_elements, inits=None, nbase=1500,
                  mut_rate=1, max_t=35, start_t=0):
         assert num_elements > 0
@@ -68,11 +117,36 @@ class System:
             self.log_cells[f'<{cell.gen}_{cell.cellid}>'] = cell
             
     def add_reaction(self, rate=0., num_lefts=None, num_rights=None,index=None):
+        '''
+        Add reactions to simulation
+        
+        Args:
+            rate:
+                reaction rate function
+            num_lefts:
+                Cell numbers before reaction
+            num_right:
+                Cell numbers after reaction
+            index:
+                Reaction index
+        '''
         assert len(num_lefts) == self.num_elements
         assert len(num_rights) == self.num_elements
         self.reactions.append(Reaction(rate, num_lefts, num_rights,index))
     
     def mutate(self, cell, mutrate):
+        '''
+        simulation DNA mutation
+        
+        Args:
+            cell:
+                cell
+            mutrate:
+                mutation rate
+        Return:
+            cell:
+                cell with mutated DNA seq
+        '''
         if cell.gen < self.start_t:
             return cell
         mut_num = np.random.poisson(mutrate)
@@ -80,6 +154,9 @@ class System:
         return cell
     
     def ncrenewal(self):
+        '''
+        neutral cell -> 2 neutral cells
+        '''
         ind = np.random.choice(range(len(self.Neutral)))
         des1 = deepcopy(self.Neutral[ind])
         des2 = deepcopy(self.Neutral[ind])
@@ -107,6 +184,9 @@ class System:
         self.cell_num += 1
     
     def acrenewal(self):
+        '''
+        advantageous cell -> 2 advantageous cells
+        '''
         ind = np.random.choice(range(len(self.Advantageous)))
         des1 = deepcopy(self.Advantageous[ind])
         des2 = deepcopy(self.Advantageous[ind])
@@ -134,6 +214,9 @@ class System:
         self.cell_num += 1
         
     def advmut(self):
+        '''
+        neutral cell -> advantageous cell
+        '''
         ind = np.random.choice(range(len(self.Neutral)))
         des1 = deepcopy(self.Neutral[ind])
         self.log_cells[f'<{self.Neutral[ind].gen}_{self.Neutral[ind].cellid}>'].is_alive=False
@@ -152,6 +235,9 @@ class System:
         self.cell_num += 1
     
     def ncdeath(self):
+        '''
+        neutral cell -> death
+        '''
         ind = np.random.choice(range(len(self.Neutral)))
         self.mut_num -= self.mut_num_NC[ind]
         self.cell_num -= 1
@@ -161,6 +247,9 @@ class System:
         del self.mut_num_NC[ind]
         
     def acdeath(self):
+        '''
+        advantageous cell -> death
+        '''
         ind = np.random.choice(range(len(self.Advantageous)))
         self.mut_num -= self.mut_num_AC[ind]
         self.cell_num -= 1

@@ -16,6 +16,15 @@ import warnings
 from collections import defaultdict
 
 def cellnumber(t, xx, r, a, s, u):
+    '''
+    ODE of cell number changes over time
+    
+    Args:
+        t: 
+            time
+        xx: 
+            [n_stemcell, n_nonstemcell]
+    '''
     x, y = xx
     return np.array([
         (2*a-1)*r*x,
@@ -23,6 +32,20 @@ def cellnumber(t, xx, r, a, s, u):
     ])
 
 def cellnumber_nc(t, x, r, a):
+    '''
+    Neutral cell number calculator
+    
+    Args:
+        t:
+            time
+        x:
+            neutral cell number
+        r, a:
+            parameters
+    return:
+        np.array:
+            neutral cell number at time t.
+    '''
     N = len(x)
     mat = np.zeros((N, N))
     diag = np.diag_indices_from(mat)
@@ -31,12 +54,43 @@ def cellnumber_nc(t, x, r, a):
     return np.dot(mat, x)
 
 def nc_sol(t, c0, k, r, a):
-    # return c0*(2*a*r*t)**k*np.exp(-r*t)/factorial(k)
+    '''
+    Analytical solution of neutral cell number
+    
+    Args:
+        t:
+            time
+        c0:
+            initial neutral cell number
+        k:
+            generation
+        r, a:
+            parameters
+    return:
+        float:
+            neutral cell number in generation k at time t.
+    '''
     if k == 0:
         return c0*np.exp(-r*t)
     return c0*(2*np.e*a*r*t/k)**k*np.exp(-r*t)/np.sqrt(2*np.pi*k)
 
 def cellnumber_ac(t, x, c0, r, a, s, u):
+    '''
+    Neutral cell number calculator
+    
+    Args:
+        t:
+            time
+        x:
+            advantageous cell number
+        c0:
+            initial ac number
+        r, a, s, u:
+            parameters
+    return:
+        np.array:
+            advantageous cell number at time t.
+    '''
     N = len(x)
     mat, mat1 = np.zeros((N, N)), np.zeros((N, N))
     diag = np.diag_indices_from(mat)
@@ -49,12 +103,41 @@ def cellnumber_ac(t, x, c0, r, a, s, u):
     return np.dot(mat, x) + np.dot(mat1, nc)
 
 def p_xi(gen, T, x0, r, a, s, u):
+    '''
+    Probability density function of LR distance
+    Args:
+        gen:
+            generation
+        T: 
+            time
+        x0:
+            initial cell number
+        r, a, s, u: 
+            parameters
+    Return:
+        np.array:
+            Probability density of LR distance at time T.
+    '''
     sol_nc = np.array([nc_sol(T, x0, i, r, a) for i in range(gen)])
     sol_ac = solve_ivp(cellnumber_ac, t_span=(0, T), y0=[0]*gen, method='RK45', args=(x0, r, a, s, u)).y[:,-1]
     cell_num = sol_nc+sol_ac
     return cell_num
 
 def my_loglike(theta, data, args):
+    '''
+    Likelihood of lr-dist
+
+    Args:
+        theta:
+            parameters, (r, a, s, u)
+        data:
+            Observed lr dist
+        args:
+            paramteres, (time, initial_cell_number, prior_sigma)
+    Return:
+        float:
+            Sum of log-likelihood of given lr dist parameters
+    '''
     T, c0, sigma = args
     r, a, s, u = theta
     xt = p_xi(len(data), T, c0, r, a, s, u)
@@ -62,6 +145,20 @@ def my_loglike(theta, data, args):
     return llh
 
 def para_inference_DE(data, T=20, c0=None, sigma=1, n_iter=100, bootstrape=0, verbose='text'):
+    '''
+    Mutation rate estimation using DE
+    
+    Args:
+        data:
+            lp-dist
+        n_iter:
+            Iterations of de estimation
+        bootstrape:
+            Weather using bootstrape to accuratly estimate mutation rate, 0 to turn off.
+    Return:
+        tuple:
+            (accepted parameters, loss, de-estimator)
+    '''
     if c0 is None:
         def loss(theta):
             r, a, s, u, c0 = theta
@@ -122,6 +219,27 @@ class LogLike(pt.Op):
         outputs[0][0] = np.array(logl)  # output the log-likelihood
         
 def mcmc_inference(data, para_prior, T, c0, sigma, draw=1000, tune=1000, chains=5):
+    '''
+    Mutation rate estimation using DE-MCMC
+    
+    Args:
+        data:
+            Observed lp-dist
+        data_prior:
+            mean of prior distributions of all parameters
+        T:
+            time of phylodynamics eqns
+        c0:
+            initial cell numbers
+        sigma:
+            variation of loss function
+        draw:
+            Number of smaples to draw
+        tune:
+            Number of iterations to tune
+        chain:
+            number of chains to sample
+    '''
     logl = LogLike(my_loglike, data, (T, c0, sigma))
     rh, ah, sh, uh = para_prior
     with pm.Model() as model:

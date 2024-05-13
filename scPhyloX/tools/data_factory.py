@@ -6,6 +6,22 @@ import gzip
 population_size = {'Br':75000,'Ey':44000,'Fb':281600,'L1':10000,'L2':13500,'L3':17000,'Mp':19470,'Sg':102400,'Wg':49000}
 # population_size = {'Br':75000,'Ey':44000,'Fb':2200,'L1':10000,'L2':13500,'L3':17000,'Mp':19470,'Sg':200,'Wg':49000}
 def cell_number_calc(w, l, r, coef=1e8):
+    '''
+    Calculate tumor cell number with given width, height and scale
+    
+    Args:
+        w: 
+            width
+        l:
+            heigth
+        r:
+            scale
+        coef:
+            cell density
+    Return:
+        float:
+            cell number
+    '''
     vol = 4*np.pi*w*l*min(w,l)/6
     vol = vol/r**3
     return vol*coef
@@ -15,6 +31,18 @@ for i in tumor_data:
     tumor_size[i] = cell_number_calc(*tumor_data[i])
 
 def get_branchlen(seqtab:np.ndarray=None, sys=None):
+    '''
+    Calculate LP distance with given mutation character matrix
+    
+    Args:
+        seqtab:
+            mutation character matrix
+        sys:
+            Gillespie simulator with results
+    Return:
+        np.array:
+            LP distance 
+    '''
     if seqtab is None:
         assert not sys is None
         seqtab = np.array([i.seq for i in sys.Stemcells] + [i.seq for i in sys.Diffcells])
@@ -36,6 +64,20 @@ def get_branchlen(seqtab:np.ndarray=None, sys=None):
     return np.min(distmat, 1)
 
 def get_mutnum(seqtab=None, sys=None, filter_trunk=True):
+    '''
+    Calculate LR distance with given mutation character matrix
+    
+    Args:
+        seqtab:
+            mutation character matrix
+        sys:
+            Gillespie simulator with results
+        filter_trunk:
+            Filter trunk mutations
+    Return:
+        np.array:
+            LR distance 
+    '''
     if seqtab is None:
         assert not sys is None
         seqtab = np.array([i.seq for i in sys.Stemcells] + [i.seq for i in sys.Diffcells])
@@ -58,6 +100,19 @@ def get_mutnum(seqtab=None, sys=None, filter_trunk=True):
 #     return np.array(res)
 
 def mutnum_fly(seqs, ref):
+    '''
+    calculate LR distance for SMALT-fly dataset
+    
+    Args:
+        seqs:
+            DNA muataion character matrix
+        ref:
+            reference seuence
+    
+    Return:
+        np.array:
+            LR distance 
+    '''
     with open(ref, 'r') as f:
         ref0 = f.readlines()[-1]
     ref = [i for i in ref0 if i in 'CG']
@@ -79,6 +134,21 @@ def mutnum_fly(seqs, ref):
 
 
 def branchlen_fly(seqs, ref, rs=1):
+    '''
+    calculate LP distance for SMALT-fly dataset
+    
+    Args:
+        seqs:
+            DNA muataion character matrix
+        ref:
+            reference seuence
+        rs:
+            resampling ratio
+    
+    Return:
+        np.array:
+            LP distance 
+    '''
     with open(ref, 'r') as f:
         ref0 = f.readlines()[-1]
     ref = [i for i in ref0 if i in 'CG']
@@ -100,5 +170,3 @@ def branchlen_fly(seqs, ref, rs=1):
         mutmat = mutmat[np.random.choice(range(mutmat.shape[0]), int(rs*mutnum.shape[0]), replace=False)]
     return get_branchlen(mutmat)
 
-def get_data_from_tree(file):
-    tree = Phylo.read(file, format='newick')

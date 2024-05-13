@@ -20,6 +20,19 @@ def cellnumber(t, xx, a, b, k, t0, p, r, d):
     ])
 
 class Reaction: 
+    '''
+    Cell division/differentiation type
+    
+    Args:
+        rate:
+            reaction rate function
+        num_lefts:
+            Cell numbers before reaction
+        num_right:
+            Cell numbers after reaction
+        index:
+            Reaction index
+    '''
     def __init__(self, rate=0., num_lefts=None, num_rights=None, index=None):
         self.rate = rate
         assert len(num_lefts) == len(num_rights)
@@ -33,6 +46,25 @@ class Reaction:
         return self.rate(t) * self.combine(n, self.num_lefts)
 
 class Cell:
+    """
+    Cell class
+    
+    Args:
+        seq:
+            DNA sequence
+        gen: 
+            Cell generation
+        cellid: 
+            Cell id
+        celltype:
+            Cell type, stem/non-stem cell
+        is_alive: 
+            Is cell alive or died
+        lseq: 
+            Length of DNA seq 
+        init: 
+            if init, cell will generate DNA seq with given length lseq automatically
+    """
     def __init__(self, seq=None, gen=None, cellid=None, celltype=None, is_alive=True, lseq=1500, init=False):
         self.seq = seq
         self.gen = gen
@@ -43,12 +75,32 @@ class Cell:
         if init:
             self.initialize(lseq)  
     def initialize(self, lseq):
+        '''
+        Generate DNA seq with given length lseq
+        '''
         if self.seq is None:
             self.seq = np.zeros(lseq)
         if self.gen is None:
             self.gen = 0
             
 class System: 
+    '''
+    Gillespie simulation
+    
+    Args:
+        num_elements: 
+            Cell type number
+        inits: 
+            Initial cell number
+        nbase:
+            length of cell DNA seq
+        mut_rate:
+            mutation rate of DNA seq, follows Poisson distribution
+        max_t:
+            maximum simulation time
+        start_t:
+            Mutate start time
+    '''
     def __init__(self, num_elements, inits=None, nbase=1500,
                  mut_rate=1, max_t=35, start_t=0):
         assert num_elements > 0
@@ -81,11 +133,36 @@ class System:
             self.log_cells[f'<{cell.gen}_{cell.cellid}>'] = cell
             
     def add_reaction(self, rate=0., num_lefts=None, num_rights=None,index=None):
+        '''
+        Add reactions to simulation
+        
+        Args:
+            rate:
+                reaction rate function
+            num_lefts:
+                Cell numbers before reaction
+            num_right:
+                Cell numbers after reaction
+            index:
+                Reaction index
+        '''
         assert len(num_lefts) == self.num_elements
         assert len(num_rights) == self.num_elements
         self.reactions.append(Reaction(rate, num_lefts, num_rights,index))
     
     def mutate(self, cell, mutrate):
+        '''
+        simulation DNA mutation
+        
+        Args:
+            cell:
+                cell
+            mutrate:
+                mutation rate
+        Return:
+            cell:
+                cell with mutated DNA seq
+        '''
         if cell.gen < self.start_t:
             return cell
         mut_num = np.random.poisson(mutrate)
@@ -93,6 +170,9 @@ class System:
         return cell
     
     def stemrenewal(self):
+        '''
+        stem cell -> 2 stem cells
+        '''
         ind = np.random.choice(range(len(self.Stemcells)))
         des1 = deepcopy(self.Stemcells[ind])
         des2 = deepcopy(self.Stemcells[ind])
@@ -120,6 +200,9 @@ class System:
         self.cell_num += 1
         
     def stemdiff(self):
+        '''
+        stem cell -> non-stem cell + non-stem cell
+        '''
         ind = np.random.choice(range(len(self.Stemcells)))
         des1 = deepcopy(self.Stemcells[ind])
         des2 = deepcopy(self.Stemcells[ind])
@@ -146,6 +229,9 @@ class System:
         self.cell_num += 1
         
     def diffdeath(self):
+        '''
+        non-stem cell -> death cell
+        '''
         ind = np.random.choice(range(len(self.Diffcells)))
         self.mut_num -= self.mut_num_DC[ind]
         self.cell_num -= 1
@@ -155,6 +241,9 @@ class System:
         del self.mut_num_DC[ind]
         
     def stemasym(self):
+        '''
+        stem cell -> stem cell + non-stem cell
+        '''
         ind = np.random.choice(range(len(self.Stemcells)))
         des1 = deepcopy(self.Stemcells[ind])
         des2 = deepcopy(self.Stemcells[ind])
@@ -203,6 +292,22 @@ class System:
                 break
             
 def simulation(x0, max_t, mut_rate, a, b, p, r, k, d, t0):
+    '''
+    Run gillespie simulation in tissue development model
+    
+    Args:
+        x0:
+            initial cell number
+        max_t:
+            stop time
+        mut_rate:
+            mutation rate
+        a,b,p,r,k,d,t0:
+            paras
+    Return:
+        Object:
+            gillespie simulator with results
+    '''
     num_elements = 2
     system = System(num_elements,inits = x0, max_t=max_t, mut_rate=mut_rate)
 
