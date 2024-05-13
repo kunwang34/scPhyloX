@@ -10,12 +10,26 @@ from scipy.integrate import quad
 from sko.DE import DE
 import warnings
 
-def bt(t, a, b, k, t0):
+def bt(t: float, a:float, b:float, k:float, t0:float):
+    '''
+    Stem cell growth rate \beta(t)
+    
+    Args:
+        t: time
+        a,b,k,t0: parameters
+    '''
     # a+b -> b
     return a/(1+np.exp(k*(t-t0))) + b
 
 
 def cellnumber(t, xx, a, b, k, t0, p, r, d):
+    '''
+    ODE of cell number changes over time
+    
+    Args:
+        t: time
+        xx: [n_stemcell, n_nonstemcell]
+    '''
     x, y = xx
     bt = lambda t: a/(1+np.exp(k*(t-t0))) + b
     return np.array([
@@ -24,6 +38,9 @@ def cellnumber(t, xx, a, b, k, t0, p, r, d):
     ])
     
 def ncyc(i, t, c0, ax, bx, r, d, k, t0):
+    '''
+    Stem cell 
+    '''
     if i == 0 :
         t1 = c0*np.exp(-r*t)
     else:

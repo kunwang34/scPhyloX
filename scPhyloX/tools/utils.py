@@ -75,8 +75,8 @@ def colless_index(tree):
         if len(i.clades) > 2:
             binary = 0
         ci.append(np.abs(len(i.clades[0].get_terminals())-len(i.clades[1].get_terminals())))
-    if not binary:
-        warnings.warn('Not binary tree')
+    # if not binary:
+    #     warnings.warn('Not binary tree')
     return ci
 
 def colless_index_corrected(tree):
