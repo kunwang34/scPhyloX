@@ -24,3 +24,5 @@ scPhyloX - single cell Phylodynamics explorer
    :caption: Tutorials
    :maxdepth: 1
    :hidden:
+   
+   notebooks/GettingStart
