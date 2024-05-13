@@ -11,5 +11,3 @@ scipy==1.13.0
 setuptools==68.0.0
 sympy==1.11.1
 tqdm==4.65.0
-nbsphinx
-sphinx-autoapi
