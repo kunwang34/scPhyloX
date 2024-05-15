@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-scPhyloX - single cell Phylodynamics explorer
+scPhyloX - single-cell phylodynamics explorer
 =============================================================================
 
 **scPhyloX** is a computational framework to perform phylodynamics inference and reconstruct tissue developmental history dynamics. Through the branch length (LP distance and LR distance) distributions of the phylogenetic tree, phylodynamics parameters during tissue development and tumorgensis can be quantitatively inferred by scPhyloX.
