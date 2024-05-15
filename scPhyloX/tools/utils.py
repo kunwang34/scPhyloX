@@ -1,7 +1,9 @@
 from scipy.stats import pearsonr
 from scipy.stats import spearmanr
 import matplotlib.pyplot as plt
+from copy import deepcopy
 import numpy as np
+import pandas as pd
 import warnings
 
 def corr_plot(x, y, ax, stats='pearson', r0_x=None, r0_y=None, r1_x=None, r1_y=None, line='fit', alternative='two-sided', fontsize=10):
@@ -125,23 +127,19 @@ def ext_cid(cell):
         return 0
     return int(cell.split('_')[1][:-1])
 
-def reconstruct(lineage_info, sel_cells, file_name):
+def reconstruct(lineage_info, sel_cells, file_name=None):
     """
     Reconstruct phylogenetic tree of simulation data
     
     Args:
-        file:
-            Simulation file path
-        output:
-            Output newick file path
-        seed:
-            Random seed
-        is_balance:
-            Is all cell types' cell number equal
-        ratio:
-            How many cells to reconstruct
+        lineage_info:
+            system.lineage_info
+        sel_cells:
+            cells to build phylogenetic tree
+        file_name:
+            path to save tree. if None, just return
     Return:
-        newick tree at output file
+        text newick tree
     """
     new_keep = deepcopy(sel_cells)
     sample_index = deepcopy(sel_cells)
@@ -203,6 +201,8 @@ def reconstruct(lineage_info, sel_cells, file_name):
             data.loc[parent_index, "info"] = ni
             data = data.drop(index=pair.index)
         gen -= 1
-    with open(file_name, 'w') as f:
-        f.write(f"({','.join(tr['info'])})")
-    return data
+    nwk_tree = f"({','.join(data['info'])})"
+    if file_name:
+        with open(file_name, 'w') as f:
+            f.write(nwk_tree)
+    return nwk_tree

@@ -26,3 +26,6 @@ scPhyloX - single cell Phylodynamics explorer
    :hidden:
    
    notebooks/GettingStart
+   notebooks/Simulation
+   notebooks/Inference
+   notebooks/VisualizeResults
