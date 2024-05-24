@@ -11,3 +11,6 @@ pip install .
 
 ## Docs
 [scPhyloX Docs](https://scphylox.readthedocs.io/)
+
+## Reference
+https://www.biorxiv.org/content/10.1101/2024.05.15.594328v1
