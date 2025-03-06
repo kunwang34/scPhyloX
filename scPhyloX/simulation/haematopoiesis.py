@@ -11,14 +11,6 @@ def bt(t, a, b, k, t0):
     return a/(1+np.exp(k*(t-t0))) + b
 
 
-def cellnumber(t, xx, a, b, k, t0, p, r, d):
-    x, y = xx
-    bt = lambda t: a/(1+np.exp(k*(t-t0))) + b
-    return np.array([
-        ((1+p)*bt(t)-p)*r*x,
-        (1-bt(t))*(1+p)*r*x -d*y
-    ])
-
 class Reaction: 
     '''
     Cell division/differentiation type
@@ -102,7 +94,7 @@ class System:
             Mutate start time
     '''
     def __init__(self, num_elements, inits=None, nbase=1500,
-                 mut_rate=1, mut_rate1=None, max_t=35, start_t=0):
+                 mut_rate=1, max_t=35, start_t=0):
         assert num_elements > 0
         self.num_elements = num_elements
         self.reactions = []
@@ -113,10 +105,6 @@ class System:
             self.n = [np.array(inits)]
         self.max_t = max_t
         self.mut_rate = mut_rate
-        if mut_rate1 is None:
-            self.mut_rate1 = mut_rate
-        else:
-            self.mut_rate1 = mut_rate1
         self.global_id = defaultdict(int)
         self.Stemcells = [Cell(init=True, celltype='c', lseq=nbase, cellid=_) for _ in range(int(self.n[0][0]))]
         self.Diffcells = [Cell(init=True, celltype='n', lseq=nbase, cellid=_) for _ in range(int(self.n[0][1]))]
@@ -182,7 +170,7 @@ class System:
         des2 = deepcopy(self.Stemcells[ind])
         self.log_cells[f'<{self.Stemcells[ind].gen}_{self.Stemcells[ind].cellid}>'].is_alive=False
         des1 = self.mutate(des1, self.mut_rate)
-        des2 = self.mutate(des2, self.mut_rate1)
+        des2 = self.mutate(des2, self.mut_rate)
         des1.gen += 1
         des2.gen += 1
         des1.cellid = self.global_id[des1.gen]
@@ -201,6 +189,36 @@ class System:
         self.mut_num_SC.append(sum(self.Stemcells[-1].seq))
         self.mut_num_SC.append(sum(self.Stemcells[-2].seq))
         self.mut_num += sum(self.mut_num_SC[-2:])
+        self.cell_num += 1
+        
+    def diffrenewal(self):
+        '''
+        diff cell -> 2 diff cells
+        '''
+        ind = np.random.choice(range(len(self.Diffcells)))
+        des1 = deepcopy(self.Diffcells[ind])
+        des2 = deepcopy(self.Diffcells[ind])
+        self.log_cells[f'<{self.Diffcells[ind].gen}_{self.Diffcells[ind].cellid}>'].is_alive=False
+        des1 = self.mutate(des1, self.mut_rate)
+        des2 = self.mutate(des2, self.mut_rate)
+        des1.gen += 1
+        des2.gen += 1
+        des1.cellid = self.global_id[des1.gen]
+        des2.cellid = self.global_id[des2.gen] + 1
+        self.global_id[des1.gen] += 2
+        self.lineage_info[f'<{des1.gen}_{des1.cellid}>'] = self.Diffcells[ind].cellid
+        self.lineage_info[f'<{des2.gen}_{des2.cellid}>'] = self.Diffcells[ind].cellid
+        self.log_cells[f'<{des1.gen}_{des1.cellid}>'] = des1
+        self.log_cells[f'<{des2.gen}_{des2.cellid}>'] = des2
+        self.mut_num -= self.mut_num_DC[ind]
+        del self.Diffcells[ind]
+        del self.mut_num_DC[ind]
+        
+        self.Diffcells.append(des1)
+        self.Diffcells.append(des2)
+        self.mut_num_DC.append(sum(self.Diffcells[-1].seq))
+        self.mut_num_DC.append(sum(self.Diffcells[-2].seq))
+        self.mut_num += sum(self.mut_num_DC[-2:])
         self.cell_num += 1
         
     def stemdiff(self):
@@ -226,7 +244,7 @@ class System:
         del self.Stemcells[ind]
         del self.mut_num_SC[ind]
         self.Diffcells.append(self.mutate(des1, self.mut_rate))
-        self.Diffcells.append(self.mutate(des2, self.mut_rate1))
+        self.Diffcells.append(self.mutate(des2, self.mut_rate))
         self.mut_num_DC.append(sum(self.Diffcells[-1].seq))
         self.mut_num_DC.append(sum(self.Diffcells[-2].seq)) 
         self.mut_num += sum(self.mut_num_DC[-2:])
@@ -263,8 +281,8 @@ class System:
         self.log_cells[f'<{des1.gen}_{des1.cellid}>'] = des1
         self.log_cells[f'<{des2.gen}_{des2.cellid}>'] = des2
         self.global_id[des1.gen] += 2
-        self.Stemcells.append(self.mutate(des1, np.random.choice([self.mut_rate, self.mut_rate1])))
-        self.Diffcells.append(self.mutate(des2, np.random.choice([self.mut_rate, self.mut_rate1])))
+        self.Stemcells.append(self.mutate(des1, self.mut_rate))
+        self.Diffcells.append(self.mutate(des2, self.mut_rate))
         self.mut_num_SC.append(sum(self.Stemcells[-1].seq))
         self.mut_num_DC.append(sum(self.Diffcells[-1].seq)) 
         self.mut_num += self.mut_num_SC[-1]
@@ -287,15 +305,15 @@ class System:
             self.t.append(self.t[-1] + t0)
             d = np.random.choice(self.reactions, p=A)
             self.n.append(self.n[-1] + d.num_diff)
-            switch = {1:self.stemrenewal,2:self.stemdiff,3:self.diffdeath, 4:self.stemasym}
+            switch = {1:self.stemrenewal,2:self.stemdiff,3:self.diffdeath, 4:self.stemasym, 5:self.diffrenewal}
             switch.get(d.index)()
             self.log.append(d.index) 
             self.mut_time.append(self.mut_num/self.cell_num)
             print(f'\rcell_num:{self.cell_num}, time:{self.t[-1]}',end = "")
             if self.t[-1] > self.max_t:
                 break
-            
-def simulation(x0, max_t, mut_rate, a, b, p, r, k, d, t0, mut_rate1=None):
+                
+def simulation(x0, max_t, mut_rate, a, b, p, r, k, t0, r1, b1):
     '''
     Run gillespie simulation in tissue development model
     
@@ -313,19 +331,21 @@ def simulation(x0, max_t, mut_rate, a, b, p, r, k, d, t0, mut_rate1=None):
             gillespie simulator with results
     '''
     num_elements = 2
-    system = System(num_elements,inits = x0, max_t=max_t, mut_rate=mut_rate, mut_rate1=mut_rate1)
+    system = System(num_elements,inits = x0, max_t=max_t, mut_rate=mut_rate)
 
     beta = lambda t: bt(t, a, b, k, t0)
-    
+
     birth = lambda t: r*beta(t)
     div_asym = lambda t: r*(1-beta(t))*(1-p)
     div_sym = lambda t: r*(1-beta(t))*p
-    death = lambda t: d
-    
+    death = lambda t: r1*(1-b1)
+    mpp_birth = lambda t: r1*b1
+
     system.add_reaction(birth, [1, 0], [2, 0], 1)
     system.add_reaction(div_sym, [1, 0], [0, 2], 2)
     system.add_reaction(death, [0, 1], [0, 0], 3)
     system.add_reaction(div_asym, [1, 0], [1, 1], 4)
+    system.add_reaction(mpp_birth, [0, 1], [0, 2], 5)
     system.evolute(2000000000)
     
     return system
